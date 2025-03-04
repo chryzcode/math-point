@@ -1,97 +1,97 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
 import { useGetAuthUser } from "../lib/useGetAuthUser";
 
 const Header = () => {
+  const router = useRouter();
+
   const { state, dispatch } = useAuth();
   const { isAuthenticated, user } = state;
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
-  const router = useRouter();
   const { authUser, loading } = useGetAuthUser();
+  const [currentUser, setCurrentUser] = useState(authUser);
+
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const dropdownButton = document.getElementById("dropdown-button");
-      const dropdownMenu = document.getElementById("dropdown-menu");
-      const mobileDropdownButton = document.getElementById("mobile-dropdown-button");
-      const mobileDropdownMenu = document.getElementById("mobile-dropdown-menu");
-
-      if (
-        dropdownOpen &&
-        dropdownButton &&
-        dropdownMenu &&
-        !dropdownButton.contains(event.target as Node) &&
-        !dropdownMenu.contains(event.target as Node)
-      ) {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
-
-      if (
-        mobileDropdownOpen &&
-        mobileDropdownButton &&
-        mobileDropdownMenu &&
-        !mobileDropdownButton.contains(event.target as Node) &&
-        !mobileDropdownMenu.contains(event.target as Node)
-      ) {
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
         setMobileDropdownOpen(false);
       }
     };
 
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, true);
+    return () => document.removeEventListener("mousedown", handleClickOutside, true);
   }, [dropdownOpen, mobileDropdownOpen]);
+
+
+  useEffect(() => {
+    if (authUser) {
+      setCurrentUser(authUser);
+    }
+  }, [authUser]);
 
   const handleLogout = () => {
     dispatch({ type: "LOGOUT" });
+    setDropdownOpen(false);
+    setMobileDropdownOpen(false);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     router.push("/auth/login");
   };
 
   return (
-    <header className="relative flex justify-between items-center py-6 px-6 border-b border-primary">
-      <div
-        className="flex items-center space-x-2 cursor-pointer"
-        onClick={() => router.push("/")}
-      >
-        <img src="/logo.png" alt="Math Point Logo" className="h-12 w-12" />
-        <h1 className="text-2xl font-bold text-primary">Math Point</h1>
+    <nav ref={navRef} className="relative flex justify-between items-center py-4 px-4 border-b border-primary z-[1000]">
+      <div className="flex items-center space-x-2">
+        <Link href="/">
+          <div className="flex items-center space-x-2">
+            <img src="/logo.png" alt="Math Point Logo" className="h-16 w-16 object-contain" />
+            <p className="text-xl font-bold text-primary">Math Point</p>
+          </div>
+        </Link>
       </div>
 
       {/* Desktop Menu */}
       <div className="hidden md:flex flex-1 justify-center space-x-6">
-        <NavLinks onClick={() => setIsOpen(false)} />
+        <NavLinks router={router} onClick={() => setIsOpen(false)} isAuthenticated={isAuthenticated} />
       </div>
 
       <div className="flex items-center space-x-4 ml-auto">
         {isAuthenticated && user ? (
-          <div className="relative hidden md:block">
+          <div ref={dropdownRef} className="relative hidden md:block">
             <button
-              id="dropdown-button"
               className="flex items-center space-x-2 text-primary font-bold"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDropdownOpen(!dropdownOpen);
+              }}
             >
-              <span>{authUser?.name}</span>
+              <span>{authUser && authUser.name}</span>
               <span className="material-icons">arrow_drop_down</span>
             </button>
-
             {dropdownOpen && (
-              <div
-                id="dropdown-menu"
-                className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-2 z-50"
-              >
+              <div className="absolute right-0 mt-2 w-48 bg-background shadow-lg py-2 z-[1001]">
                 <DropdownMenu handleLogout={handleLogout} />
               </div>
             )}
           </div>
         ) : (
           <button
-            className="hidden md:block bg-primary text-white px-4 py-2 rounded-md"
+            className="hidden md:block bg-primary px-4 py-2 text-white font-bold"
             onClick={() => router.push("/auth/register")}
           >
             Register
@@ -102,34 +102,49 @@ const Header = () => {
       {/* Mobile Menu Button */}
       <button
         className="md:hidden text-primary ml-auto pt-2"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
       >
-        <span className="material-icons text-3xl">
-          {isOpen ? "close" : "menu"}
-        </span>
+        <span className="material-icons text-primary text-3xl">{isOpen ? "close" : "menu"}</span>
       </button>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="absolute top-16 left-0 w-full bg-white mt-6 py-6 flex flex-col items-center space-y-4 md:hidden z-50">
-          <NavLinks onClick={() => setIsOpen(false)} />
+        <div className="absolute top-16 my-8 left-0 w-full bg-white shadow-lg py-6 flex flex-col items-center space-y-4 md:hidden z-[1001] rounded-md border-t border-primary">
+          <div className="relative w-full px-4">
+            <div className="flex flex-col w-full space-y-2">
+              <NavLinks router={router} onClick={() => setIsOpen(false)} isAuthenticated={isAuthenticated} />
+            </div>
+          </div>
+
+          {/* {!isAuthenticated && (
+            <button
+              className="md:hidden block text-primary font-bold"
+              onClick={() => {
+                setIsOpen(false);
+                router.push("/auth/register");
+              }}
+            >
+              Register
+            </button>
+          )} */}
 
           {isAuthenticated && user && (
-            <div className="relative w-full flex justify-end pr-6">
+            <div ref={mobileDropdownRef} className="relative w-full flex justify-end pr-6">
               <button
-                id="mobile-dropdown-button"
                 className="flex items-center space-x-2 text-primary font-bold"
-                onClick={() => setMobileDropdownOpen(!mobileDropdownOpen)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileDropdownOpen(!mobileDropdownOpen);
+                }}
               >
-                <span>{authUser?.name}</span>
+                <span>{authUser && authUser.name}</span>
                 <span className="material-icons">arrow_drop_down</span>
               </button>
-
               {mobileDropdownOpen && (
-                <div
-                  id="mobile-dropdown-menu"
-                  className="absolute right-0 mt-6 w-48 bg-white shadow-lg py-2 z-50"
-                >
+                <div className="absolute right-0 mt-6 w-48 bg-background shadow-lg py-2 z-[1001]">
                   <DropdownMenu handleLogout={handleLogout} />
                 </div>
               )}
@@ -137,24 +152,27 @@ const Header = () => {
           )}
         </div>
       )}
-    </header>
+    </nav>
   );
 };
 
-const NavLinks = ({ onClick }: { onClick: () => void }) => (
+// Helper Components
+const NavLinks = ({ router, onClick, isAuthenticated }: { router: any; onClick: () => void; isAuthenticated: boolean }) => (
   <>
     {[
       { name: "Dashboard", route: "/dashboard" },
-      { name: "Book Session", route: "/book-session" },
+      { name: "Book Session", route: "/book-session" }
     ].map((item) => (
-      <a
+      <button
         key={item.name}
-        href={item.route}
-        className=""
-        onClick={onClick}
+        className="text-primary"
+        onClick={() => {
+          onClick();
+          router.push(item.route);
+        }}
       >
         {item.name}
-      </a>
+      </button>
     ))}
   </>
 );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useGetAuthUser } from "../lib/useGetAuthUser";
+import withAuth from "../context/withAuth";
 
 interface ClassData {
   pastClasses: any[];
@@ -104,4 +105,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default withAuth(Dashboard);
