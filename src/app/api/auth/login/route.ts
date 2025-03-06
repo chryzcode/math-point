@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendEmail } from "@/app/lib/mailer"; // Importing Brevo email function
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,17 +29,13 @@ export async function POST(req: NextRequest) {
         { $set: { verificationToken } }
       );
 
-      const templateParams = {
-        to_email: email,
-        to_name: user.name,
-        verification_link: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify?token=${verificationToken}`,
-      };
+      const verificationLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify?token=${verificationToken}`;
+      const emailContent = `<p>Hello ${user.name},</p><p>Please verify your account by clicking the link below:</p><a href="${verificationLink}">Verify Account</a>`;
+      
+      await sendEmail(email, "Verify Your Account", emailContent);
 
       return NextResponse.json(
-        {
-          error: "Your account is not verified. A new verification email has been sent.",
-          templateParams,
-        },
+        { error: "Your account is not verified. A new verification email has been sent." },
         { status: 403 }
       );
     }

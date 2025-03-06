@@ -4,7 +4,6 @@ import { useState, useEffect} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
-import emailjs from "emailjs-com";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -32,27 +31,6 @@ export default function Login() {
     }
   }, [searchParams, router]);
 
-  const sendVerificationEmail = async (email: string, name: string, verification_link: string) => {
-    try {
-      const templateParams = {
-        to_email: email,
-        to_name: name,
-        verification_link,
-      };
-
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-        process.env.NEXT_PUBLIC_EMAILJS_REGISTRATION_TEMPLATE_ID!,
-        templateParams,
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-      );
-
-      toast.success("Verification email sent successfully!");
-    } catch (error) {
-      console.error("EmailJS Error:", error);
-      toast.error("Failed to send verification email.");
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,13 +45,6 @@ export default function Login() {
 
       const data = await response.json();
 
-      if (response.status === 403 && data.templateParams) {
-        const emailData = data.templateParams;
-        toast.info(data.error);
-        sendVerificationEmail(emailData.email, emailData.name, emailData.verification_link);
-        setLoading(false);
-        return;
-      }
 
       if (!response.ok) {
         throw new Error(data.error || "Invalid email or password");
@@ -139,6 +110,11 @@ export default function Login() {
         {/* Register Redirect */}
         <p className="text-center mt-4 text-gray-600">
           Don't have an account? <a href="/auth/register" className="text-primary">Register</a>
+        </p>
+
+
+        <p className="text-center mt-4 text-gray-600">
+         <a href="/auth/forgot-password" className="text-primary">Forgot password?</a>
         </p>
       </div>
     </div>

@@ -22,6 +22,15 @@ const Header = () => {
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+    } else if (authUser) {
+      setCurrentUser(authUser);
+    }
+  }, [user, authUser]);
+  
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
         setIsOpen(false);
