@@ -11,6 +11,7 @@ interface User {
   verificationToken: string;
   freeClassSessions: number;
   weeklyClassLimit: number;
+  subscriptionPlan: string;
 }
 
 export async function POST(req: Request) {
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
       verificationToken: token,
       freeClassSessions: 1,
       weeklyClassLimit: 0,
+      subscriptionPlan: "Free Plan",
     });
 
     // Send verification email

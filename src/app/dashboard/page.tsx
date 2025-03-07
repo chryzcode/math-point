@@ -56,7 +56,8 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-extrabold my-12">Welcome, <span className="text-primary">{authUser.name}</span>👋!</h1>
+      <h1 className="text-3xl font-extrabold my-8">Welcome, <span className="text-primary">{authUser.name}</span>👋!</h1>
+      <p className="text-xl">You're on <span className="text-primary font-semibold">{authUser.subscriptionPlan}</span></p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         <div className="bg-blue-600 text-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold">Total Classes</h2>
@@ -79,7 +80,7 @@ const Dashboard = () => {
         {(classData?.upcomingClasses ?? []).length > 0 ? (
           (classData?.upcomingClasses ?? []).map((cls, index) => (
             <div key={index} className="p-4 bg-white rounded-md shadow-md">
-              <p className="text-lg font-semibold">{cls.studentName}</p>
+              <p className="text-lg font-semibold pb-4">{cls.studentName}</p>
               <p className="text-gray-600">{new Date(cls.preferredTime).toLocaleString()}</p>
             </div>
           ))

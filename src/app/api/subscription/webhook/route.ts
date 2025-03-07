@@ -47,7 +47,6 @@ export async function POST(req: NextRequest) {
         {
           $set: {
             subscriptionPlan: planName,
-            subscriptionActive: true,
             weeklyClassLimit,
           },
         }
@@ -66,8 +65,7 @@ export async function POST(req: NextRequest) {
           { _id: userObjectId },
           {
             $set: {
-              subscriptionPlan: null,
-              subscriptionActive: false,
+              subscriptionPlan: "Free Plan",
               weeklyClassLimit: 0,
             },
           }
@@ -89,8 +87,7 @@ export async function POST(req: NextRequest) {
           { _id: userObjectId },
           {
             $set: {
-              subscriptionPlan: null,
-              subscriptionActive: false,
+              subscriptionPlan: "Free Plan",
               weeklyClassLimit: 0,
             },
           }
