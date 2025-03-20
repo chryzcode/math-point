@@ -16,6 +16,8 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET as string
     );
 
+    console.log("🔹 Webhook Event Received:", event.type);
+
     const { db } = await connectToDatabase();
 
     switch (event.type) {
@@ -50,15 +52,24 @@ export async function POST(req: NextRequest) {
         console.log(`🔹 Plan Name: ${planName}`);
 
         const classLimits: Record<string, number> = {
-          Free: 1,
-          Premium: 3,
-          Unlimited: 5,
+          "Basic Plan": 1,
+          "Pro Plan": 3,
+          "Enterprise Plan": 5,
         };
 
         const weeklyClassLimit = classLimits[planName] ?? 0;
         const userObjectId = new ObjectId(userId);
 
-        await db.collection("users").updateOne(
+        console.log(`🔎 Checking if user exists in DB: ${userId}`);
+        const userExists = await db.collection("users").findOne({ _id: userObjectId });
+
+        if (!userExists) {
+          console.error(`❌ User with ID ${userId} not found.`);
+          return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        console.log("🔄 Updating user subscription in database...");
+        const updateResult = await db.collection("users").updateOne(
           { _id: userObjectId },
           {
             $set: {
@@ -70,7 +81,12 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        console.log("✅ Subscription updated in database");
+        if (updateResult.modifiedCount === 1) {
+          console.log("✅ Subscription updated successfully in database.");
+        } else {
+          console.warn("⚠️ Subscription update may not have modified any document.");
+        }
+
         break;
       }
 
@@ -84,6 +100,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        console.log(`🔎 Searching for user with subscription ID: ${subscriptionId}`);
         const user = await db.collection("users").findOne({ stripeSubscriptionId: subscriptionId });
 
         if (!user) {
@@ -91,7 +108,8 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        await db.collection("users").updateOne(
+        console.log(`🔄 Downgrading subscription for user ${user._id}...`);
+        const downgradeResult = await db.collection("users").updateOne(
           { _id: user._id },
           {
             $set: {
@@ -101,7 +119,12 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        console.log(`❌ Payment failed for user ${user._id}, subscription downgraded.`);
+        if (downgradeResult.modifiedCount === 1) {
+          console.log(`✅ User ${user._id} downgraded to Free Plan.`);
+        } else {
+          console.warn(`⚠️ No document modified while downgrading user ${user._id}.`);
+        }
+
         break;
       }
 
@@ -110,6 +133,7 @@ export async function POST(req: NextRequest) {
         console.log("🔹 Subscription Canceled:", subscription);
 
         const subscriptionId = subscription.id;
+        console.log(`🔎 Searching for user with subscription ID: ${subscriptionId}`);
         const user = await db.collection("users").findOne({ stripeSubscriptionId: subscriptionId });
 
         if (!user) {
@@ -117,7 +141,8 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        await db.collection("users").updateOne(
+        console.log(`🔄 Cancelling subscription for user ${user._id}...`);
+        const cancelResult = await db.collection("users").updateOne(
           { _id: user._id },
           {
             $set: {
@@ -127,7 +152,12 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        console.log(`🔄 Subscription expired or canceled for user ${user._id}`);
+        if (cancelResult.modifiedCount === 1) {
+          console.log(`✅ Subscription canceled for user ${user._id}.`);
+        } else {
+          console.warn(`⚠️ No document modified while canceling user ${user._id}.`);
+        }
+
         break;
       }
 
