@@ -1,43 +1,146 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { connectToDatabase } from "../../../lib/db";
+import { ObjectId } from "mongodb";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export async function POST(req: NextRequest) {
+  const payload = await req.text();
+  const sig = req.headers.get("stripe-signature") as string;
+
   try {
-    const { planId, userId } = await req.json(); // Get the selected plan and user
-    //get user from db
+    const event = stripe.webhooks.constructEvent(
+      payload,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET as string
+    );
+
     const { db } = await connectToDatabase();
-    const user = await db.collection("users").findOne({ _id: userId });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log("🔹 Checkout Session Data:", session);
+
+        const userId = session.metadata?.userId;
+        const subscriptionId = session.subscription as string;
+
+        if (!userId || !subscriptionId) {
+          console.error("❌ Missing userId or subscriptionId in session.");
+          return NextResponse.json({ error: "Invalid metadata" }, { status: 400 });
+        }
+
+        console.log(`✅ Checkout completed for user ${userId}, subscription ID: ${subscriptionId}`);
+
+        // Retrieve subscription details
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        console.log("🔹 Subscription Data:", subscription);
+
+        const priceId = subscription.items.data[0]?.price.id;
+        if (!priceId) {
+          console.error("❌ No price ID found in subscription.");
+          return NextResponse.json({ error: "Invalid subscription data" }, { status: 400 });
+        }
+
+        const price = await stripe.prices.retrieve(priceId);
+        const product = await stripe.products.retrieve(price.product as string);
+        const planName = product.name;
+
+        console.log(`🔹 Plan Name: ${planName}`);
+
+        const classLimits: Record<string, number> = {
+          Free: 1,
+          Premium: 3,
+          Unlimited: 5,
+        };
+
+        const weeklyClassLimit = classLimits[planName] ?? 0;
+        const userObjectId = new ObjectId(userId);
+
+        await db.collection("users").updateOne(
+          { _id: userObjectId },
+          {
+            $set: {
+              subscriptionPlan: planName,
+              weeklyClassLimit,
+              stripeCustomerId: subscription.customer,
+              stripeSubscriptionId: subscriptionId,
+            },
+          }
+        );
+
+        console.log("✅ Subscription updated in database");
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log("🔹 Payment Failed Invoice:", invoice);
+
+        const subscriptionId = invoice.subscription as string;
+        if (!subscriptionId) {
+          console.warn("❌ Missing subscriptionId in failed invoice.");
+          break;
+        }
+
+        const user = await db.collection("users").findOne({ stripeSubscriptionId: subscriptionId });
+
+        if (!user) {
+          console.warn(`❌ No user found for subscription ${subscriptionId}`);
+          break;
+        }
+
+        await db.collection("users").updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              subscriptionPlan: "Free Plan",
+              weeklyClassLimit: 0,
+            },
+          }
+        );
+
+        console.log(`❌ Payment failed for user ${user._id}, subscription downgraded.`);
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log("🔹 Subscription Canceled:", subscription);
+
+        const subscriptionId = subscription.id;
+        const user = await db.collection("users").findOne({ stripeSubscriptionId: subscriptionId });
+
+        if (!user) {
+          console.warn(`❌ No user found for subscription ${subscriptionId}`);
+          break;
+        }
+
+        await db.collection("users").updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              subscriptionPlan: "Free Plan",
+              weeklyClassLimit: 0,
+            },
+          }
+        );
+
+        console.log(`🔄 Subscription expired or canceled for user ${user._id}`);
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // Define your hardcoded price IDs from Stripe
-    const priceIds: Record<number, string> = {
-      1: "price_12345", // Replace with actual Stripe Price ID for Basic Plan
-      2: "price_67890", // Replace with actual Stripe Price ID for Pro Plan
-      3: "price_abcdef", // Replace with actual Stripe Price ID for Enterprise Plan
-    };
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "subscription",
-      customer_email: user.email, // Use actual user email from database
-      line_items: [
-        {
-          price: priceIds[planId],
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
-      metadata: { userId, planId }, // Store user ID for later processing
-    });
-
-    return NextResponse.json({ sessionUrl: session.url });
+    return NextResponse.json({ received: true });
   } catch (error) {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    console.error("🚨 Webhook Error:", error);
+    return NextResponse.json(
+      { error: "Webhook signature verification failed" },
+      { status: 400 }
+    );
   }
 }

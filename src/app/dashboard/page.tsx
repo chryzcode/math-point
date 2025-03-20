@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useGetAuthUser } from "../lib/useGetAuthUser";
 import withAuth from "../context/withAuth";
+import Link from "next/link";
 
 interface ClassData {
   pastClasses: any[];
@@ -58,6 +59,7 @@ const Dashboard = () => {
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-3xl font-extrabold my-8">Welcome, <span className="text-primary">{authUser.name}</span>👋!</h1>
       <p className="text-xl">You're on <span className="text-primary font-semibold">{authUser.subscriptionPlan}</span></p>
+      <Link href="/#subscriptions" className="text-sm underline text-gray-500">Checkout subscription plans</Link>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         <div className="bg-blue-600 text-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold">Total Classes</h2>
