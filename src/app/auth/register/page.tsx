@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import emailjs from "emailjs-com";
 
 const Register = () => {
   const router = useRouter();
@@ -14,29 +13,6 @@ const Register = () => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
-
-  // Add this function to send verification email
-const sendVerificationEmail = async (email: string, name: string, token: string) => {
-  try {
-    const templateParams = {
-      to_email: email,
-      to_name: name,
-      verification_link: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify?token=${token}`,
-    };
-
-    await emailjs.send(
-      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-      process.env.NEXT_PUBLIC_EMAILJS_REGISTRATION_TEMPLATE_ID!,
-      templateParams,
-      process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-    );
-
-    toast.success("Verification email sent successfully!");
-  } catch (error) {
-    console.error("EmailJS Error:", error);
-    toast.error("Failed to send verification email.");
-  }
-};
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,9 +40,7 @@ const sendVerificationEmail = async (email: string, name: string, token: string)
         return;
       }
 
-      // Send verification email
-      sendVerificationEmail(formData.email, formData.name, data.verification_link);
-      toast.success("Registration successful!");
+      toast.success("Registration successful! Check your email for verification.");
       router.push("/auth/login");
     } catch (error) {
       toast.error("An error occurred. Please try again.");
@@ -78,11 +52,8 @@ const sendVerificationEmail = async (email: string, name: string, token: string)
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="max-w-lg w-full bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
-          Create an Account
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Create an Account</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Full Name</label>
             <input
@@ -94,7 +65,6 @@ const sendVerificationEmail = async (email: string, name: string, token: string)
             />
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Email Address</label>
             <input
@@ -106,7 +76,6 @@ const sendVerificationEmail = async (email: string, name: string, token: string)
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
@@ -118,7 +87,6 @@ const sendVerificationEmail = async (email: string, name: string, token: string)
             />
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
             <input

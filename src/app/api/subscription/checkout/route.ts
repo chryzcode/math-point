@@ -1,43 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { connectToDatabase } from "../../../lib/db";
+import { ObjectId } from "mongodb";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export async function POST(req: NextRequest) {
   try {
-    const { planId, userId } = await req.json(); // Get the selected plan and user
-    //get user from db
+    const { planId, userId } = await req.json();
+    console.log("🔹 Received planId:", planId);
+    console.log("🔹 Received userId:", userId);
+
+    if (!planId || !userId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
     const { db } = await connectToDatabase();
-    const user = await db.collection("users").findOne({ _id: userId });
+    const user = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Define your hardcoded price IDs from Stripe
-    const priceIds: Record<number, string> = {
-      1: "price_12345", // Replace with actual Stripe Price ID for Basic Plan
-      2: "price_67890", // Replace with actual Stripe Price ID for Pro Plan
-      3: "price_abcdef", // Replace with actual Stripe Price ID for Enterprise Plan
-    };
+    const priceIdArray = process.env.NEXT_PUBLIC_STRIPE_PRICE_IDS?.split(",").map(id => id.trim()) || [];
+    if (!priceIdArray.includes(planId)) {
+      return NextResponse.json({ error: "Invalid plan selected" }, { status: 400 });
+    }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
-      customer_email: user.email, // Use actual user email from database
-      line_items: [
-        {
-          price: priceIds[planId],
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
-      metadata: { userId, planId }, // Store user ID for later processing
+      customer_email: user.email,
+      line_items: [{ price: planId, quantity: 1 }],
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-status?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-status?status=cancel`,
+      metadata: { userId, planId },
     });
 
+    console.log("✅ Checkout session created:", session.id);
+
     return NextResponse.json({ sessionUrl: session.url });
+
   } catch (error) {
+    console.error("❌ Subscription error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }
