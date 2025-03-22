@@ -12,6 +12,7 @@ interface User {
   freeClassSessions: number;
   weeklyClassLimit: number;
   subscriptionPlan: string;
+  role: string;
 }
 
 export async function POST(req: Request) {
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
       freeClassSessions: 1,
       weeklyClassLimit: 0,
       subscriptionPlan: "Free Plan",
+      role: "student",
     });
 
     // Send verification email

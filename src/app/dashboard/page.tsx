@@ -10,7 +10,8 @@ interface ClassData {
   upcomingClasses: any[];
   totalClasses: number;
   remainingClasses: number;
-  freeSessions: number;
+  freeSessions?: number;
+  totalInstructors?: number;
 }
 
 const Dashboard = () => {
@@ -23,10 +24,15 @@ const Dashboard = () => {
     const fetchClasses = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token"); // Get token from localStorage
+        const token = localStorage.getItem("token");
         if (!token) throw new Error("Unauthorized - No token found");
 
-        const res = await fetch("/api/bookings", {
+        const endpoint =
+          authUser.role === "instructor"
+            ? "/api/bookings/instructor"
+            : "/api/bookings";
+
+        const res = await fetch(endpoint, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -49,17 +55,29 @@ const Dashboard = () => {
     };
 
     fetchClasses();
-  }, []);
+  }, [authUser.role]);
 
   if (loading) return <p className="text-center text-white">Loading...</p>;
   if (error) return <p className="text-red-500 text-center">{error}</p>;
 
-
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-extrabold my-8">Welcome, <span className="text-primary">{authUser.name}</span>👋!</h1>
-      <p className="text-xl">You're on <span className="text-primary font-semibold">{authUser.subscriptionPlan}</span></p>
-      <Link href="/#subscriptions" className="text-sm underline text-gray-500">Checkout subscription plans</Link>
+      <h1 className="text-3xl font-extrabold my-8">
+        Welcome, <span className="text-primary">{authUser.name}</span> 👋!
+      </h1>
+
+      {/* Subscription info only for students */}
+      {authUser.role !== "instructor" && (
+        <>
+          <p className="text-xl">
+            You're on <span className="text-primary font-semibold">{authUser.subscriptionPlan}</span>
+          </p>
+          <Link href="/#subscriptions" className="text-sm underline text-gray-500">
+            Checkout subscription plans
+          </Link>
+        </>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         <div className="bg-blue-600 text-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold">Total Classes</h2>
@@ -72,8 +90,14 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-yellow-600 text-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold">Free Sessions</h2>
-          <p className="text-4xl font-extrabold">{classData?.freeSessions ?? 0}</p>
+          <h2 className="text-2xl font-bold">
+            {authUser.role === "instructor" ? "Total Instructors" : "Free Sessions"}
+          </h2>
+          <p className="text-4xl font-extrabold">
+            {authUser.role === "instructor"
+              ? classData?.totalInstructors ?? 0
+              : classData?.freeSessions ?? 0}
+          </p>
         </div>
       </div>
 

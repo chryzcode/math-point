@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     // Update user record with new limits
     await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: updateFields });
 
-    // Send email with formatted time
+    // Send email confirmation to student
     await sendEmail(
       email,
       "Math Point Tutoring Session Confirmation",
@@ -85,8 +85,29 @@ export async function POST(req: NextRequest) {
        <p>Best regards,<br>Math Point Team</p>`
     );
 
+    // Fetch all instructors
+    const instructors = await usersCollection.find({ userType: "instructor" }).toArray();
+
+    // Send email to each instructor
+    for (const instructor of instructors) {
+      if (instructor.email) {
+        await sendEmail(
+          instructor.email,
+          "New Tutoring Session Scheduled",
+          `<p>Hello ${instructor.fullName || "Instructor"},</p>
+           <p>A new tutoring session has been scheduled.</p>
+           <p><strong>Student:</strong> ${studentName}</p>
+           <p><strong>Parent:</strong> ${parentName}</p>
+           <p><strong>Grade:</strong> ${grade}</p>
+           <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
+           <p>Concerns: ${concerns || "None"}</p>
+           <p>Best regards,<br>Math Point Team</p>`
+        );
+      }
+    }
+
     return NextResponse.json(
-      { message: "Booking successful", bookingId: result.insertedId },
+      { message: "Booking successful, instructors notified", bookingId: result.insertedId },
       { status: 201 }
     );
   } catch (error) {

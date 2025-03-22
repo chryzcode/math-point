@@ -5,7 +5,7 @@ import { useGetAuthUser } from "../lib/useGetAuthUser";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
-const calendlyURL = process.env.NEXT_PUBLIC_CALENDLY_URL as string;
+const calendlyBaseURL = process.env.NEXT_PUBLIC_CALENDLY_URL as string;
 
 const BookingForm = () => {
   const [formStep, setFormStep] = useState(1); // 1: Form, 2: Calendly, 3: Confirmation
@@ -17,20 +17,46 @@ const BookingForm = () => {
     grade: "",
     concerns: "",
   });
-  const [scheduledTime, setScheduledTime] = useState<string | null>(null); // To store scheduled time from Calendly
+  const [scheduledTime, setScheduledTime] = useState<string | null>(null);
   const { authUser } = useGetAuthUser();
   const router = useRouter();
   const token = localStorage.getItem("token") || "";
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [calendlyURL, setCalendlyURL] = useState(""); // Updated URL with date restrictions
+
+  // Calculate the start and end of the current week
+  const calculateCurrentWeek = () => {
+    const now = new Date();
+
+    // Get current week's Monday (start of the week)
+    const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+
+    // Get current week's Sunday (end of the week)
+    const lastDayOfWeek = new Date(now.setDate(firstDayOfWeek.getDate() + 6));
+
+    // Convert to YYYY-MM-DD format
+    const formatDate = (date: Date) => date.toISOString().split("T")[0];
+
+    return {
+      startOfWeek: formatDate(firstDayOfWeek),
+      endOfWeek: formatDate(lastDayOfWeek),
+    };
+  };
+
+  useEffect(() => {
+    const { startOfWeek, endOfWeek } = calculateCurrentWeek();
+
+    // Append min_date and max_date to Calendly URL
+    const updatedURL = `${calendlyBaseURL}?min_date=${startOfWeek}&max_date=${endOfWeek}`;
+    setCalendlyURL(updatedURL);
+  }, []);
 
   useEffect(() => {
     if (!authUser) {
-      // Redirect if authUser is null or undefined
       router.push("/dashboard");
     } else if (authUser.freeClassSessions === 0 && authUser.weeklyClassLimit === 0) {
-      // Show error and redirect if both are 0
       toast.error("You have no free classes or have reached your weekly limit.");
       router.push("/dashboard");
     }
@@ -69,38 +95,9 @@ const BookingForm = () => {
     return true;
   };
 
-  const fetchEventDetails = async (eventUri: string) => {
-    try {
-      const response = await fetch(eventUri, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_CALENDLY_API_KEY}`,
-        },
-      });
-  
-      if (!response.ok) {
-        throw new Error("Failed to fetch Calendly event details");
-      }
-  
-      const eventData = await response.json();
-      console.log("Calendly Full Event Data:", eventData);
-  
-      const scheduledTime = eventData.resource?.start_time;
-  
-      return { scheduledTime };
-    } catch (error) {
-      console.error("Error fetching Calendly event details:", error);
-      return null;
-    }
-  };
-  
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    // Move to Calendly step after validation
     setFormStep(2);
   };
 
@@ -112,49 +109,23 @@ const BookingForm = () => {
       script.async = true;
       document.body.appendChild(script);
 
-      script.onload = () => {
-        console.log("Calendly widget loaded");
-      };
-
       return () => {
         document.body.removeChild(script);
       };
     }
-  }, [formStep]); // Only run when formStep changes to 2
+  }, [formStep]);
 
   useEffect(() => {
     const handleEvent = async (e: MessageEvent) => {
-      console.log("Received message event:", e.data);
-  
       if (e.data?.event === "calendly.event_scheduled") {
         const eventDetails = e.data.payload;
-        console.log("Calendly Event Payload:", eventDetails);
-  
         if (!eventDetails || !eventDetails.event?.uri) {
           console.error("Invalid event data received from Calendly", eventDetails);
           return;
         }
-  
-        // Fetch event details to get Zoom link and scheduled time
-        const eventData = await fetchEventDetails(eventDetails.event.uri);
-  
-        // Ensure eventData exists before accessing properties
-        if (!eventData) {
-          console.error("Failed to fetch event details from Calendly");
-          return;
-        }
-  
-        const { scheduledTime } = eventData;
-  
-        if (!scheduledTime) {
-          console.error("Missing start time from Calendly event");
-          return;
-        }
-  
-        console.log("Scheduled Time:", scheduledTime);
-  
+
         setLoading(true);
-  
+
         // Send to backend for booking
         const bookingResponse = await fetch("/api/bookings/book-class", {
           method: "POST",
@@ -164,24 +135,23 @@ const BookingForm = () => {
           },
           body: JSON.stringify({
             ...formData,
-            preferredTime: scheduledTime,
+            preferredTime: eventDetails.event.start_time,
           }),
         });
-  
+
         const bookingData = await bookingResponse.json();
-  
+
         if (!bookingResponse.ok) {
           throw new Error(bookingData.message || "Failed to book the class.");
         }
-  
+
         setFormStep(3); // Move to confirmation step
       }
     };
-  
+
     window.addEventListener("message", handleEvent);
     return () => window.removeEventListener("message", handleEvent);
   }, [formData, token]);
-  
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
@@ -204,7 +174,6 @@ const BookingForm = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Parent Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Parent's Name *</label>
                   <input
@@ -216,7 +185,6 @@ const BookingForm = () => {
                   />
                 </div>
 
-                {/* Student Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Student's Name *</label>
                   <input
@@ -229,7 +197,6 @@ const BookingForm = () => {
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
                 <input
@@ -241,7 +208,6 @@ const BookingForm = () => {
                 />
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
                 <input
@@ -253,7 +219,6 @@ const BookingForm = () => {
                 />
               </div>
 
-              {/* Grade */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Student's Grade *</label>
                 <select
@@ -271,7 +236,6 @@ const BookingForm = () => {
                 </select>
               </div>
 
-              {/* Concerns */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Any specific concerns or topics to focus on?
@@ -310,26 +274,8 @@ const BookingForm = () => {
 
         {formStep === 3 && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h2>
-            <p className="text-gray-600">
-              We've sent you an email with all the details.
-              <br />
-              Looking forward to meeting you!
-
-              <br/> <br/>
-              <a href="/dashboard" className="text-primary">Back to dashboard</a>
-            </p>
-
+            <p className="text-gray-600">We've sent you an email with all the details. Looking forward to meeting you!</p>
           </div>
         )}
       </div>
