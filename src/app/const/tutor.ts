@@ -16,7 +16,7 @@ export class Tutor {
       "Pre-K–12",
       "Robina, math tutor with 6 years of teaching experience:",
       "“I believe that kids should be taught with patience and consideration. My job is to ensure that your kids learn effectively in an enjoyable way.”",
-      "/my.png" // Replace with actual image path
+      "/Robina.jpeg" // Replace with actual image path
     ),
     new Tutor(
       "Muhammad Ramzan",
