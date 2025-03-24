@@ -48,8 +48,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Get total instructors count
-    const totalInstructors = await usersCollection.countDocuments({ role: "instructor" });
+    // Get total students count
+    const totalStudents = await usersCollection.countDocuments({ role: "student" });
 
     return NextResponse.json(
       {
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
         upcomingClasses,
         totalClasses: allBookings.length,
         remainingClasses: upcomingClasses.length,
-        totalInstructors: totalInstructors, // Show total instructors
+        totalStudents, // Show total students
       },
       { status: 200 }
     );

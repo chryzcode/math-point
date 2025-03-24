@@ -24,7 +24,7 @@ export class Tutor {
       "Pre-K-University",
       "Muhammad, math tutor with 8 years of teaching experience:",
       "“Unlock the power of numbers with personalized math tutoring! Whether you're solving for “X” or mastering calculus, I make math easy to understand and fun to learn.”",
-      "/my.png" // Replace with actual image path
+      "/Muhammad.jpeg" // Replace with actual image path
     )
   ];
 

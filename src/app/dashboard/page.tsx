@@ -11,7 +11,7 @@ interface ClassData {
   totalClasses: number;
   remainingClasses: number;
   freeSessions?: number;
-  totalInstructors?: number;
+  totalStudents?: number;
 }
 
 const Dashboard = () => {
@@ -91,11 +91,11 @@ const Dashboard = () => {
 
         <div className="bg-yellow-600 text-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold">
-            {authUser.role === "instructor" ? "Total Instructors" : "Free Sessions"}
+            {authUser.role === "instructor" ? "Total Students" : "Free Sessions"}
           </h2>
           <p className="text-4xl font-extrabold">
             {authUser.role === "instructor"
-              ? classData?.totalInstructors ?? 0
+              ? classData?.totalStudents ?? 0
               : classData?.freeSessions ?? 0}
           </p>
         </div>

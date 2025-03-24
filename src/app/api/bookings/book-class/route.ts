@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Fetch all instructors
-    const instructors = await usersCollection.find({ userType: "instructor" }).toArray();
+    const instructors = await usersCollection.find({ role: "instructor" }).toArray();
 
     // Send email to each instructor
     for (const instructor of instructors) {
