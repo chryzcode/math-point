@@ -85,7 +85,7 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-green-600 text-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold">Remaining Classes</h2>
+          <h2 className="text-2xl font-bold">{authUser.role === "instructor" ? "Upcoming Classes" : "Remaining Classes"}</h2>
           <p className="text-4xl font-extrabold">{classData?.remainingClasses ?? 0}</p>
         </div>
 
