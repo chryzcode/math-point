@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { freeClassSessions = 0, weeklyClassLimit = 0 } = userRecord;
+    const { freeClassSessions = 0, weeklyClassLimit = 0, instructor } = userRecord;
 
     if (freeClassSessions <= 0 && weeklyClassLimit <= 0) {
       return NextResponse.json({ error: "Weekly class limit reached" }, { status: 403 });
@@ -85,16 +85,15 @@ export async function POST(req: NextRequest) {
        <p>Best regards,<br>Math Point Team</p>`
     );
 
-    // Fetch all instructors
-    const instructors = await usersCollection.find({ role: "instructor" }).toArray();
+    // Send email only to the assigned instructor
+    if (instructor && ObjectId.isValid(instructor)) {
+      const instructorRecord = await usersCollection.findOne({ _id: new ObjectId(instructor) });
 
-    // Send email to each instructor
-    for (const instructor of instructors) {
-      if (instructor.email) {
+      if (instructorRecord?.email) {
         await sendEmail(
-          instructor.email,
+          instructorRecord.email,
           "New Tutoring Session Scheduled",
-          `<p>Hello ${instructor.fullName || "Instructor"},</p>
+          `<p>Hello ${instructorRecord.fullName || "Instructor"},</p>
            <p>A new tutoring session has been scheduled.</p>
            <p><strong>Student:</strong> ${studentName}</p>
            <p><strong>Parent:</strong> ${parentName}</p>
@@ -107,7 +106,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: "Booking successful, instructors notified", bookingId: result.insertedId },
+      { message: "Booking successful, instructor notified", bookingId: result.insertedId },
       { status: 201 }
     );
   } catch (error) {

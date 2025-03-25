@@ -14,29 +14,31 @@ export async function GET(req: NextRequest) {
     const usersCollection = db.collection("users");
     const bookingsCollection = db.collection("bookings");
 
-    // Fetch the user from the database using their ID
-    const dbUser = await usersCollection.findOne({ _id: new ObjectId((user as any).userId) });
+    // Fetch the instructor from the database
+    const instructor = await usersCollection.findOne({ _id: new ObjectId((user as any).userId) });
 
-    if (!dbUser) {
+    if (!instructor) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // Check if user is an instructor
-    if (dbUser.role !== "instructor") {
+    // Ensure user is an instructor
+    if (instructor.role !== "instructor") {
       return NextResponse.json({ error: "Access denied. Only instructors can access this data." }, { status: 403 });
     }
 
     // Get current UTC time
     const currentDateUTC = new Date();
 
-    // Fetch all classes
-    const allBookings = await bookingsCollection.find().toArray();
+    // Fetch only bookings assigned to this instructor
+    const instructorBookings = await bookingsCollection
+      .find({ instructorId: instructor._id })
+      .toArray();
 
     // Separate past and upcoming classes
     const pastClasses = [];
     const upcomingClasses = [];
 
-    for (const cls of allBookings) {
+    for (const cls of instructorBookings) {
       if (!cls.preferredTime) continue;
 
       const classDateUTC = new Date(cls.preferredTime);
@@ -48,21 +50,21 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Get total students count
-    const totalStudents = await usersCollection.countDocuments({ role: "student" });
+    // Get total students assigned to this instructor
+    const totalStudents = await usersCollection.countDocuments({ instructorId: instructor._id });
 
     return NextResponse.json(
       {
         pastClasses,
         upcomingClasses,
-        totalClasses: allBookings.length,
+        totalClasses: instructorBookings.length,
         remainingClasses: upcomingClasses.length,
-        totalStudents, // Show total students
+        totalStudents,
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error fetching all classes:", error);
+    console.error("Error fetching instructor's classes:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
