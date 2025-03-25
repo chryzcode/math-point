@@ -73,6 +73,18 @@ export async function POST(req: NextRequest) {
 
     // Update user record with new limits
     await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: updateFields });
+    const senderEmail = process.env.SENDER_EMAIL as string;
+
+    // Also send to sender email
+    await sendEmail(
+      senderEmail,
+      "Math Point Tutoring Session Confirmation",
+      `<p>Dear ${studentName},</p>
+      <p>Your tutoring session has been scheduled.</p>
+      <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
+      <p>Please check your Calendly invite and add it to your calendar to avoid missing the session.</p>
+      <p>Best regards,<br>Math Point Team</p>`
+    );
 
     // Send email confirmation to student
     await sendEmail(
