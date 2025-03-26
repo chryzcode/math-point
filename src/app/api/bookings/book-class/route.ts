@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
       timeZone: "UTC",
     }).format(new Date(preferredTime));
 
+    // Check if this is the user's first booking
+    const existingBookings = await bookingsCollection.countDocuments({ userId: new ObjectId(userId) });
+
     // Create new booking
     const newBooking = {
       userId: new ObjectId(userId),
@@ -73,20 +76,8 @@ export async function POST(req: NextRequest) {
 
     // Update user record with new limits
     await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: updateFields });
-    const senderEmail = process.env.SENDER_EMAIL as string;
 
-    // Also send to sender email
-    await sendEmail(
-      senderEmail,
-      "Math Point Tutoring Session Confirmation",
-      `<p>Dear ${studentName},</p>
-      <p>Your tutoring session has been scheduled.</p>
-      <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
-      <p>Please check your Calendly invite and add it to your calendar to avoid missing the session.</p>
-      <p>Best regards,<br>Math Point Team</p>`
-    );
-
-    // Send email confirmation to student
+    // Send confirmation email to student
     await sendEmail(
       email,
       "Math Point Tutoring Session Confirmation",
@@ -115,6 +106,25 @@ export async function POST(req: NextRequest) {
            <p>Best regards,<br>Math Point Team</p>`
         );
       }
+    }
+
+    // If this is the user's first booking, notify the sender email to assign an instructor
+    if (existingBookings === 0) {
+      const senderEmail = process.env.SENDER_EMAIL as string;
+      await sendEmail(
+        senderEmail,
+        "New Student Booking - Instructor Assignment Needed",
+        `<p>A new student has booked their first tutoring session.</p>
+         <p><strong>Student Name:</strong> ${studentName}</p>
+         <p><strong>Parent Name:</strong> ${parentName}</p>
+         <p><strong>Email:</strong> ${email}</p>
+         <p><strong>Phone:</strong> ${phone}</p>
+         <p><strong>Grade:</strong> ${grade}</p>
+         <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
+         <p><strong>Concerns:</strong> ${concerns || "None"}</p>
+         <p>Please assign an instructor for this student.</p>
+         <p>Best regards,<br>Math Point Team</p>`
+      );
     }
 
     return NextResponse.json(
