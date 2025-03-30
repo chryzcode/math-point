@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,7 +12,6 @@
     "@stripe/stripe-js": "^6.1.0",
     "axios": "^1.7.9",
     "bcryptjs": "^3.0.2",
-    "emailjs-com": "^3.2.0",
     "jsonwebtoken": "^8.5.1",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.475.0",
