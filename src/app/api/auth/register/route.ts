@@ -1,129 +1,78 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/db";
-import authenticate from "@/middleware/authentication";
-import { ObjectId } from "mongodb";
-import { sendEmail } from "@/app/lib/mailer"; // Ensure you have a sendEmail function
+import { connectToDatabase } from "../../../lib/db";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { sendEmail } from "@/app/lib/mailer"; // Import the Brevo email function
 
-export async function POST(req: NextRequest) {
-  const user = await authenticate(req);
-  if (user instanceof NextResponse) return user;
+interface User {
+  name: string;
+  email: string;
+  password: string;
+  verified: boolean;
+  verificationToken: string;
+  freeClassSessions: number;
+  weeklyClassLimit: number;
+  subscriptionPlan: string;
+  role: string;
+  instructorId?: string;
+}
 
-  const userId = (user as any).userId || (user as any)._id;
-
-  if (!userId || typeof userId !== "string" || !ObjectId.isValid(userId)) {
-    return NextResponse.json({ error: "Invalid User ID" }, { status: 400 });
-  }
-
+export async function POST(req: Request) {
   try {
-    const { parentName, studentName, email, phone, grade, concerns, preferredTime } = await req.json();
+    const body = await req.json();
+    const { name, email, password } = body;
 
-    if (!parentName || !studentName || !email || !phone || !grade || !preferredTime) {
-      return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 });
+    // Input validation
+    if (!name || !email || !password) {
+      return new Response(JSON.stringify({ error: "All fields are required" }), { status: 400 });
     }
 
     const { db } = await connectToDatabase();
-    const usersCollection = db.collection("users");
-    const bookingsCollection = db.collection("bookings");
 
-    const userRecord = await usersCollection.findOne({ _id: new ObjectId(userId) });
-
-    if (!userRecord) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Check if user already exists
+    const existingUser = await db.collection<User>("users").findOne({ email });
+    if (existingUser) {
+      return new Response(JSON.stringify({ error: "User already exists" }), { status: 400 });
     }
 
-    const { freeClassSessions = 0, weeklyClassLimit = 0, instructor } = userRecord;
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    if (freeClassSessions <= 0 && weeklyClassLimit <= 0) {
-      return NextResponse.json({ error: "Weekly class limit reached" }, { status: 403 });
-    }
+    // Generate verification token
+    const token = jwt.sign({ email }, process.env.JWT_SECRET!, { expiresIn: "1h" });
+    const verificationLink = `${process.env.BASE_URL}/api/auth/verify?token=${token}`;
 
-    const updateFields: any = {};
-    if (freeClassSessions > 0) {
-      updateFields.freeClassSessions = freeClassSessions - 1;
-    } else if (weeklyClassLimit > 0) {
-      updateFields.weeklyClassLimit = weeklyClassLimit - 1;
-    }
-
-    // Validate preferred time
-    const parsedTime = new Date(preferredTime);
-    if (isNaN(parsedTime.getTime())) {
-      return NextResponse.json({ error: "Invalid preferred time" }, { status: 400 });
-    }
-
-    const formattedTime = new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "UTC",
-    }).format(parsedTime);
-
-    // Fetch instructor details
-    let instructorName = "your assigned tutor";
-    let instructorEmail = null;
-
-    if (instructor && ObjectId.isValid(instructor)) {
-      const instructorRecord = await usersCollection.findOne({ _id: new ObjectId(instructor) });
-      if (instructorRecord) {
-        instructorName = instructorRecord.name || "your assigned tutor";
-        instructorEmail = instructorRecord.email;
-      }
-    }
-
-    // Create new booking
-    const newBooking = {
-      userId: new ObjectId(userId),
-      parentName,
-      studentName,
+    // Save the unverified user
+    await db.collection<User>("users").insertOne({
+      name,
       email,
-      phone,
-      grade,
-      concerns: concerns || "",
-      preferredTime: parsedTime, // Store as Date object
-      createdAt: new Date(),
-    };
+      password: hashedPassword,
+      verified: false,
+      verificationToken: token,
+      freeClassSessions: 1,
+      weeklyClassLimit: 0,
+      subscriptionPlan: "Free Plan",
+      role: "student",
+      instructorId: "",
+    });
 
-    const result = await bookingsCollection.insertOne(newBooking);
+    // Send verification email
+    await sendEmail(
+      email,
+      "Verify Your Email",
+      `<p>Hi ${name},</p>
+      <p>Click the link below to verify your email:</p>
+      <a href="${verificationLink}">Verify Email</a>`
+    );
 
-    // Update user record with new limits
-    await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: updateFields });
-
-    // Send email confirmation to student
-    const studentEmailContent = `
-      <p>Dear ${studentName},</p>
-      <p>Your tutoring session has been successfully scheduled with <strong>${instructorName}</strong>.</p>
-      <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
-      <p>Please check your Calendly invite and add it to your calendar to avoid missing the session.</p>
-      <p>Best regards,<br>Math Point Team</p>
-    `;
-
-    await sendEmail(email, "Math Point Tutoring Session Confirmation", studentEmailContent);
-
-    // Send email only to the assigned instructor
-    if (instructorEmail) {
-      const instructorEmailContent = `
-        <p>Hello ${instructorName},</p>
-        <p>A new tutoring session has been scheduled.</p>
-        <p><strong>Student:</strong> ${studentName}</p>
-        <p><strong>Parent:</strong> ${parentName}</p>
-        <p><strong>Grade:</strong> ${grade}</p>
-        <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
-        <p>Concerns: ${concerns || "None"}</p>
-        <p>Best regards,<br>Math Point Team</p>
-      `;
-
-      await sendEmail(instructorEmail, "New Tutoring Session Scheduled", instructorEmailContent);
-    }
-
-    return NextResponse.json(
-      { message: "Booking successful, instructor notified", bookingId: result.insertedId },
+    return new Response(
+      JSON.stringify({
+        message: "User registered successfully. Check your email for verification.",
+        verification_link: verificationLink, // Include it for frontend logging if needed
+      }),
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating booking:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Error during registration:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
   }
 }
