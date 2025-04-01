@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const { parentName, studentName, email, phone, grade, concerns, preferredTime } = await req.json();
 
     if (!parentName || !studentName || !email || !phone || !grade || !preferredTime) {
+      console.log(parentName, studentName, email, phone, grade, concerns, preferredTime)
       return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 });
     }
 

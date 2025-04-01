@@ -24,19 +24,12 @@ const BookingForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [calendlyURL, setCalendlyURL] = useState(""); // Updated URL with date restrictions
+  const [calendlyURL, setCalendlyURL] = useState("");
 
-  // Calculate the start and end of the current week
   const calculateCurrentWeek = () => {
     const now = new Date();
-
-    // Get current week's Monday (start of the week)
     const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
-
-    // Get current week's Sunday (end of the week)
     const lastDayOfWeek = new Date(now.setDate(firstDayOfWeek.getDate() + 6));
-
-    // Convert to YYYY-MM-DD format
     const formatDate = (date: Date) => date.toISOString().split("T")[0];
 
     return {
@@ -47,8 +40,6 @@ const BookingForm = () => {
 
   useEffect(() => {
     const { startOfWeek, endOfWeek } = calculateCurrentWeek();
-
-    // Append min_date and max_date to Calendly URL
     const updatedURL = `${calendlyBaseURL}?min_date=${startOfWeek}&max_date=${endOfWeek}`;
     setCalendlyURL(updatedURL);
   }, []);
@@ -95,7 +86,7 @@ const BookingForm = () => {
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
     setFormStep(2);
@@ -119,35 +110,67 @@ const BookingForm = () => {
     const handleEvent = async (e: MessageEvent) => {
       if (e.data?.event === "calendly.event_scheduled") {
         const eventDetails = e.data.payload;
-        if (!eventDetails || !eventDetails.event?.uri) {
-          console.error("Invalid event data received from Calendly", eventDetails);
-          return;
+
+        console.log("Calendly Event Payload:", eventDetails); // Log the full payload for debugging
+
+        try {
+          // Fetch event details from Calendly API
+          const response = await fetch(eventDetails.event.uri, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_CALENDLY_API_KEY}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch event details from Calendly.");
+          }
+
+          const eventData = await response.json();
+          const startTime = eventData.resource?.start_time;
+
+          if (!startTime) {
+            console.error("Start time is missing in the event details.");
+            return;
+          }
+
+          setLoading(true);
+
+          // Send the start time to the backend for booking
+          const bookingResponse = await fetch("/api/bookings/book-class", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              ...formData,
+              preferredTime: startTime,
+            }),
+          });
+
+          const bookingData = await bookingResponse.json();
+
+          if (!bookingResponse.ok) {
+            throw new Error(bookingData.message || "Failed to book the class.");
+          }
+
+          setScheduledTime(new Intl.DateTimeFormat("en-US", {
+            dateStyle: "full",
+            timeStyle: "short",
+          }).format(new Date(startTime)));
+          
+          
+          // Output
+          setFormStep(3); // Move to confirmation step
+        } catch (error) {
+          console.error("Error during event processing:", error);
+        } finally {
+          setLoading(false);
         }
-
-        setLoading(true);
-
-        // Send to backend for booking
-        const bookingResponse = await fetch("/api/bookings/book-class", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ...formData,
-            preferredTime: eventDetails.event.start_time,
-          }),
-        });
-
-        const bookingData = await bookingResponse.json();
-
-        if (!bookingResponse.ok) {
-          throw new Error(bookingData.message || "Failed to book the class.");
-        }
-
-        setFormStep(3); // Move to confirmation step
       }
     };
+    
 
     window.addEventListener("message", handleEvent);
     return () => window.removeEventListener("message", handleEvent);
@@ -275,7 +298,9 @@ const BookingForm = () => {
         {formStep === 3 && (
           <div className="text-center py-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h2>
-            <p className="text-gray-600">We've sent you an email with all the details. Looking forward to meeting you!</p>
+            <p className="text-gray-600">
+              Your session is scheduled for {scheduledTime}. We've sent you an email with all the details.
+            </p>
           </div>
         )}
       </div>
