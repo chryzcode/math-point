@@ -93,12 +93,15 @@ const Dashboard = () => {
           <p className="text-4xl font-extrabold">{classData?.remainingClasses ?? 0}</p>
         </div>
 
-        {authUser.role !== "student" && (
-          <div className="bg-yellow-600 text-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold">Total Students</h2>
-            <p className="text-4xl font-extrabold">{classData?.totalStudents ?? 0}</p>
-          </div>
-        )}
+        <div className="bg-yellow-600 text-white p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold">
+          {authUser.role !== "student" ? "Total Students" : "Free Sessions"}
+        </h2>
+        <p className="text-4xl font-extrabold">
+          {authUser.role !== "student" ? classData?.totalStudents ?? 0 : classData?.freeSessions ?? 0}
+        </p>
+      </div>
+
       </div>
 
       {authUser.role === "admin" && <AssignStudents />}
@@ -106,7 +109,7 @@ const Dashboard = () => {
       <h2 className="text-3xl font-bold text-gray-800 mt-8">Upcoming Classes</h2>
       <div className="mt-4 space-y-4">
         {classData && classData.upcomingClasses.length > 0 ? (
-          classData.upcomingClasses.slice((page - 1) * 2, page * 2).map((cls, index) => (
+          classData.upcomingClasses.slice((page - 1) * 5, page * 5).map((cls, index) => (
             <div key={index} className="p-4 bg-white rounded-md shadow-md">
               <p className="text-lg font-semibold pb-4">{cls.studentName}</p>
               <p className="text-gray-600">{new Date(cls.preferredTime).toLocaleString()}</p>
@@ -122,7 +125,7 @@ const Dashboard = () => {
       <h2 className="text-3xl font-bold text-gray-800 mt-8">Past Classes</h2>
       <div className="mt-4 space-y-4">
         {classData && classData.pastClasses.length > 0 ? (
-          classData.pastClasses.slice((page - 1) * 2, page * 2).map((cls, index) => (
+          classData.pastClasses.slice((page - 1) * 5, page * 5).map((cls, index) => (
             <div key={index} className="p-4 bg-gray-200 rounded-md shadow-md">
               <p className="text-lg font-semibold">{cls.studentName}</p>
               <p className="text-gray-600">{new Date(cls.preferredTime).toLocaleString()}</p>
@@ -137,7 +140,7 @@ const Dashboard = () => {
 
       {/* Show pagination only if there are more than 2 items */}
       {classData && (
-        (classData.upcomingClasses.length > 2 || classData.pastClasses.length > 2) && (
+        (classData.upcomingClasses.length > 5 || classData.pastClasses.length > 5) && (
           <div className="flex justify-between mt-6">
             <button
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
@@ -150,8 +153,8 @@ const Dashboard = () => {
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               onClick={() => setPage((prev) => prev + 1)}
               disabled={
-                page * 2 >= classData.upcomingClasses.length && 
-                page * 2 >= classData.pastClasses.length
+                page * 5 >= classData.upcomingClasses.length && 
+                page * 5 >= classData.pastClasses.length
               }
             >
               Next
