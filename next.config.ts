@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { startWeeklyResetJob } from "@/middleware/createClassLimits";
+import { startWeeklyResetJob } from "./src/middleware/createClassLimits";
 
 const nextConfig: NextConfig = {
 

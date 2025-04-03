@@ -9,13 +9,13 @@ export const testimonials = [
     {
       quote:
         "I highly recommend this program to anyone who needs guidance in math or wants to exceed to the next level. The tutors are very helpful and give you sufficient practice materials to test your knowledge.",
-      author: "ASAS Cleveland",
+      // author: "ASAS Cleveland",
       class:"11th Grade",
     },
     {
       quote:
         "My grades and classroom performance have been improved after joining. Now, math is something that I see as fun and an opportunity to learn more.",
-      author: "AECI II",
+      // author: "AECI II",
       class:"7th Grade",
     },
   ];

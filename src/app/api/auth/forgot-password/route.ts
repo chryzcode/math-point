@@ -15,12 +15,11 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 });
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, { expiresIn: "1h" });
-    const hashedToken = await hash(token, 10);
-
-    await db.collection("users").updateOne({ email }, { $set: { resetToken: hashedToken } });
+    await db.collection("users").updateOne({ email }, { $set: { resetToken: token } });
 
     // ✅ Send password reset email using Brevo
     const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password?token=${token}`;
+    console.log(resetLink)
     await sendEmail(email, "Password Reset Request", `
       <p>Hello,</p>
       <p>You requested a password reset. Click the link below to reset your password:</p>

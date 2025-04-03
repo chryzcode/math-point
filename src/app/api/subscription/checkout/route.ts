@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.role !== "student") {
+      return NextResponse.json({ error: "Only students can subscribe"}, { status: 400 });
+    }
+
     const priceIdArray = process.env.NEXT_PUBLIC_STRIPE_PRICE_IDS?.split(",").map(id => id.trim()) || [];
     if (!priceIdArray.includes(planId)) {
       return NextResponse.json({ error: "Invalid plan selected" }, { status: 400 });

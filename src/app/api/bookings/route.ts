@@ -107,7 +107,10 @@ export async function GET(req: NextRequest) {
     if (!updatedUserProfile) {
       return NextResponse.json({ error: "User profile not found" }, { status: 404 });
     }
-    const remainingClasses = updatedUserProfile.remainingClasses || totalClasses;
+    
+    console.log( classesThisWeek.length)
+    let remainingClasses = totalClasses - classesThisWeek.length;
+    if (remainingClasses < 0) remainingClasses = 0;
 
     // Helper function to format class data
     const formatClasses = (classes: any[]) =>

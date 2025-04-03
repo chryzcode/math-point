@@ -4,14 +4,16 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { token, newPassword } = await req.json();
+    const { searchParams } = new URL(req.url); // Extract token from URL query
+    const token = searchParams.get("token");
+    const { newPassword } = await req.json();
 
     if (!token || !newPassword) {
       return NextResponse.json({ message: "Invalid request" }, { status: 400 });
     }
 
     const { db } = await connectToDatabase();
-    
+
     // Find user by reset token
     const user = await db.collection("users").findOne({ resetToken: token });
 

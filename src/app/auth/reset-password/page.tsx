@@ -14,24 +14,29 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
+    if (!token) {
+      toast.error("Invalid request. Please try again.");
+      return;
+    }
+  
     if (password !== confirmPassword) {
       toast.error("Passwords do not match!");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch(`/api/auth/reset-password?token=${token}`, { // ✅ Pass token as query param
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword: password }),
+        body: JSON.stringify({ newPassword: password }),
       });
-
+  
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
+      if (!res.ok) throw new Error(data.message || "Failed to reset password");
+  
       toast.success("Password reset successfully!");
       router.push("/auth/login");
     } catch (error: any) {

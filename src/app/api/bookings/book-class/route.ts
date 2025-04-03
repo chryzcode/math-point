@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const { parentName, studentName, email, phone, grade, concerns, preferredTime } = await req.json();
 
     if (!parentName || !studentName || !email || !phone || !grade || !preferredTime) {
+      console.log(parentName, studentName, email, phone, grade, concerns, preferredTime)
       return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 });
     }
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { freeClassSessions = 0, weeklyClassLimit = 0 } = userRecord;
+    const { freeClassSessions = 0, weeklyClassLimit = 0, instructor } = userRecord;
 
     if (freeClassSessions <= 0 && weeklyClassLimit <= 0) {
       return NextResponse.json({ error: "Weekly class limit reached" }, { status: 403 });
@@ -56,6 +57,9 @@ export async function POST(req: NextRequest) {
       timeZone: "UTC",
     }).format(new Date(preferredTime));
 
+    // Check if this is the user's first booking
+    const existingBookings = await bookingsCollection.countDocuments({ userId: new ObjectId(userId) });
+
     // Create new booking
     const newBooking = {
       userId: new ObjectId(userId),
@@ -74,7 +78,7 @@ export async function POST(req: NextRequest) {
     // Update user record with new limits
     await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: updateFields });
 
-    // Send email with formatted time
+    // Send confirmation email to student
     await sendEmail(
       email,
       "Math Point Tutoring Session Confirmation",
@@ -85,8 +89,47 @@ export async function POST(req: NextRequest) {
        <p>Best regards,<br>Math Point Team</p>`
     );
 
+    // Send email only to the assigned instructor
+    if (instructor && ObjectId.isValid(instructor)) {
+      const instructorRecord = await usersCollection.findOne({ _id: new ObjectId(instructor) });
+
+      if (instructorRecord?.email) {
+        await sendEmail(
+          instructorRecord.email,
+          "New Tutoring Session Scheduled",
+          `<p>Hello ${instructorRecord.fullName || "Instructor"},</p>
+           <p>A new tutoring session has been scheduled.</p>
+           <p><strong>Student:</strong> ${studentName}</p>
+           <p><strong>Parent:</strong> ${parentName}</p>
+           <p><strong>Grade:</strong> ${grade}</p>
+           <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
+           <p>Concerns: ${concerns || "None"}</p>
+           <p>Best regards,<br>Math Point Team</p>`
+        );
+      }
+    }
+
+    // If this is the user's first booking, notify the sender email to assign an instructor
+    if (existingBookings === 0) {
+      const senderEmail = process.env.SENDER_EMAIL as string;
+      await sendEmail(
+        senderEmail,
+        "New Student Booking - Instructor Assignment Needed",
+        `<p>A new student has booked their first tutoring session.</p>
+         <p><strong>Student Name:</strong> ${studentName}</p>
+         <p><strong>Parent Name:</strong> ${parentName}</p>
+         <p><strong>Email:</strong> ${email}</p>
+         <p><strong>Phone:</strong> ${phone}</p>
+         <p><strong>Grade:</strong> ${grade}</p>
+         <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
+         <p><strong>Concerns:</strong> ${concerns || "None"}</p>
+         <p>Please assign an instructor for this student.</p>
+         <p>Best regards,<br>Math Point Team</p>`
+      );
+    }
+
     return NextResponse.json(
-      { message: "Booking successful", bookingId: result.insertedId },
+      { message: "Booking successful, instructor notified", bookingId: result.insertedId },
       { status: 201 }
     );
   } catch (error) {

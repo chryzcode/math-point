@@ -7,7 +7,7 @@ export function TutorCard({ tutor }: { tutor: Tutor }) {
     <div className="max-w-sm mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-200">
       {/* Profile Image */}
       <div className="flex justify-center mt-4">
-        <div className="w-24 h-24 relative">
+        <div className="w-28 h-28 relative">
           <Image
             src={tutor.imagePath}
             alt="Tutor"
