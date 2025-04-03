@@ -18,7 +18,7 @@ const AssignStudents = () => {
   const [selectedInstructor, setSelectedInstructor] = useState("");
 
   useEffect(() => {
-    const fetchData = async (endpoint: string, setter: Function) => {
+    const fetchData = async (endpoint: string, setter: (data: any[]) => void) => {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Unauthorized - No token found");

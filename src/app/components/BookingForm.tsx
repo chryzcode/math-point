@@ -46,12 +46,12 @@ const BookingForm = () => {
 
   useEffect(() => {
     if (!authUser) {
-      router.push("/dashboard");
+      router.push("/auth/login");
     } else if (authUser.freeClassSessions === 0 && authUser.weeklyClassLimit === 0) {
       toast.error("You have no free classes or have reached your weekly limit.");
       router.push("/dashboard");
     }
-  }, [authUser]);
+  }, [authUser, router]);
 
   const grades = [
     "Pre-K",

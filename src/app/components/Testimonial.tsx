@@ -1,5 +1,6 @@
 import React from "react";
 import { testimonials } from "../const/testimonial";
+import Image from "next/image";
 
 function TestimonialsSection() {
   return (
@@ -16,7 +17,7 @@ function TestimonialsSection() {
             >
               {/* Quote Image */}
               <div className="flex justify-start text-primary">
-                <img src="/qoute.png" alt="Quote" className="w-8 h-8 mr-2" />
+                <Image src="/qoute.png" alt="Quote" width={32} height={32} className="mr-2" />
               </div>
 
               {/* Testimonial Content */}

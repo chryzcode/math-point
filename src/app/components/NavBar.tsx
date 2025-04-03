@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import { useGetAuthUser } from "../lib/useGetAuthUser";
 
@@ -55,7 +56,7 @@ const Header = () => {
       <div className="flex items-center space-x-2">
         <Link href="/">
           <div className="flex items-center space-x-2">
-            <img src="/logo.png" alt="Math Point Logo" className="h-16 w-16 object-contain" />
+            <Image src="/logo.png" alt="Math Point Logo" width={64} height={64} className="object-contain" />
             <p className="text-xl font-bold text-primary">Math Point</p>
           </div>
         </Link>
