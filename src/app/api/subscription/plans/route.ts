@@ -14,16 +14,20 @@ export async function GET() {
     const prices = await Promise.all(
       priceIds.map(async (priceId) => {
         const price = await stripe.prices.retrieve(priceId.trim(), { expand: ["product"] });
+        console.log("Price details:", price);
+
+        const product = price.product as Stripe.Product;
+        const features = product.marketing_features?.map(feature => 
+          typeof feature === 'object' && feature !== null ? feature.name : feature
+        ) || [];
 
         return {
           id: price.id,
-          name: (price.product as Stripe.Product).name,
-          description: (price.product as Stripe.Product).description || "",
+          name: product.name,
+          description: product.description || "",
           amount: price.unit_amount || 0,
           interval: price.recurring?.interval || "month",
-          features: (price.product as Stripe.Product).metadata.features
-            ? (price.product as Stripe.Product).metadata.features.split(",")
-            : [],
+          features: features
         };
       })
     );

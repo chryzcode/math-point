@@ -1,12 +1,12 @@
 import cron from "node-cron";
 import { connectToDatabase } from "../app/lib/db";
 
-type SubscriptionPlan = "Basic Plan" | "Pro Plan" | "Enterprise Plan";
+type SubscriptionPlan = "Basic Plan" | "Pro Plan" | "Advanced Plan";
 
 const classLimits: Record<SubscriptionPlan, number> = {
   "Basic Plan": 1,
   "Pro Plan": 3,
-  "Enterprise Plan": 5,
+  "Advanced Plan": 5,
 };
 
 export function startWeeklyResetJob() {

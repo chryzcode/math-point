@@ -117,7 +117,7 @@ function MathTutorScreen() {
               <ul className="space-y-4">
                 <li className="flex items-center gap-4">
                   <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
-                  <span className="text-lg text-gray-700">Pre-K to 6th grade math tutoring</span>
+                  <span className="text-lg text-gray-700">Pre-K to university math tutoring</span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
