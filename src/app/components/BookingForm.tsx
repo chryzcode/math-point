@@ -189,7 +189,7 @@ const BookingForm = () => {
         {formStep === 1 && (
           <>
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-800">Book Your Free Demo Session</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Book Your Session</h2>
               <p className="text-gray-600 mt-2">
                 Fill out the form below to schedule your personalized demo class.
               </p>

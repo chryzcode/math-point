@@ -73,23 +73,25 @@ const SubscriptionCard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.length > 0 ? (
           plans.map((plan) => (
-            <div key={plan.id} className="p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-              <h3 className="text-xl font-semibold">{plan.name}</h3>
-              <p className="text-gray-600 py-4">
-                ${(plan.amount / 100).toFixed(2)} / {plan.interval}
-              </p>
-              <ul className="mt-4 space-y-2">
-                {plan.features.length > 0 ? (
-                  plan.features.map((feature: string, index: number) => (
-                    <li key={index} className="text-gray-500 flex items-center">✅ {feature}</li>
-                  ))
-                ) : (
-                  <li className="text-gray-500">No listed features</li>
-                )}
-              </ul>
+            <div key={plan.id} className="flex flex-col h-full p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+              <div className="flex-grow">
+                <h3 className="text-xl font-semibold">{plan.name}</h3>
+                <p className="text-gray-600 py-4">
+                  ${(plan.amount / 100).toFixed(2)} / {plan.interval}
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {plan.features.length > 0 ? (
+                    plan.features.map((feature: string, index: number) => (
+                      <li key={index} className="text-gray-500 flex items-center">✅ {feature}</li>
+                    ))
+                  ) : (
+                    <li className="text-gray-500">No listed features</li>
+                  )}
+                </ul>
+              </div>
               <button
                 onClick={() => handleSubscription(plan.id)}
-                className="mt-10 w-full bg-primary text-white py-2 rounded-md"
+                className="mt-6 w-full bg-primary text-white py-2 rounded-md"
                 disabled={loading && selectedPlan === plan.id}
               >
                 {loading && selectedPlan === plan.id ? "Processing..." : "Choose Plan"}

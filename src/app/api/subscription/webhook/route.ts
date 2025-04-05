@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         const classLimits: Record<string, number> = {
           "Basic Plan": 1,
           "Pro Plan": 3,
-          "Enterprise Plan": 5,
+          "Advanced Plan": 5,
         };
 
         const weeklyClassLimit = classLimits[planName] ?? 0;
