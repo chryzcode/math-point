@@ -5,61 +5,76 @@ import { ObjectId } from "mongodb";
 
 export async function GET(req: NextRequest) {
   try {
-    // Authenticate user
+    // Authenticate instructor
     const user = await authenticate(req);
     if (user instanceof NextResponse) return user;
 
-    // Connect to DB
     const { db } = await connectToDatabase();
     const usersCollection = db.collection("users");
     const bookingsCollection = db.collection("bookings");
 
-    // Fetch the instructor from the database
-    const instructor = await usersCollection.findOne({ _id: new ObjectId((user as any).userId) });
+    const instructorId = new ObjectId((user as any).userId);
+
+    // Find the instructor
+    const instructor = await usersCollection.findOne({ _id: instructorId });
 
     if (!instructor) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // Ensure user is an instructor
     if (instructor.role !== "instructor") {
-      return NextResponse.json({ error: "Access denied. Only instructors can access this data." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Access denied. Only instructors can access this data." },
+        { status: 403 }
+      );
     }
 
-    // Get current UTC time
-    const currentDateUTC = new Date();
-
-    // Fetch only bookings assigned to this instructor
-    const instructorBookings = await bookingsCollection
-      .find({ instructorId: instructor._id })
+    // Get all students assigned to this instructor
+    const students = await usersCollection
+      .find({ role: "student", instructorId })
       .toArray();
 
-    // Separate past and upcoming classes
+    const studentIds = students.map((s) => s._id);
+
+    if (studentIds.length === 0) {
+      return NextResponse.json({
+        totalClasses: 0,
+        remainingClasses: 0,
+        pastClasses: [],
+        upcomingClasses: [],
+        totalStudents: 0,
+      });
+    }
+
+    // Fetch bookings for all students assigned to this instructor
+    const bookings = await bookingsCollection
+      .find({ userId: { $in: studentIds } })
+      .toArray();
+
+    // Get current UTC time
+    const now = new Date();
+
     const pastClasses = [];
     const upcomingClasses = [];
 
-    for (const cls of instructorBookings) {
-      if (!cls.preferredTime) continue;
+    for (const booking of bookings) {
+      const bookingTime = new Date(booking.preferredTime);
+      if (isNaN(bookingTime.getTime())) continue;
 
-      const classDateUTC = new Date(cls.preferredTime);
-
-      if (classDateUTC < currentDateUTC) {
-        pastClasses.push(cls);
+      if (bookingTime < now) {
+        pastClasses.push(booking);
       } else {
-        upcomingClasses.push(cls);
+        upcomingClasses.push(booking);
       }
     }
 
-    // Get total students assigned to this instructor
-    const totalStudents = await usersCollection.countDocuments({ instructorId: instructor._id });
-
     return NextResponse.json(
       {
+        totalClasses: bookings.length,
+        remainingClasses: upcomingClasses.length,
         pastClasses,
         upcomingClasses,
-        totalClasses: instructorBookings.length,
-        remainingClasses: upcomingClasses.length,
-        totalStudents,
+        totalStudents: students.length,
       },
       { status: 200 }
     );
