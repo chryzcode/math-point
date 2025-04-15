@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { parentName, studentName, email, phone, grade, concerns, preferredTime } = await req.json();
+    const { parentName, studentName, email, phone, grade, concerns, preferredTime, eventDetails } = await req.json();
 
-    if (!parentName || !studentName || !email || !phone || !grade || !preferredTime) {
-      console.log(parentName, studentName, email, phone, grade, concerns, preferredTime)
+    if (!parentName || !studentName || !email || !phone || !grade || !preferredTime || !eventDetails) {
+      console.log(parentName, studentName, email, phone, grade, concerns, preferredTime, eventDetails)
       return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 });
     }
 
@@ -85,7 +85,8 @@ export async function POST(req: NextRequest) {
       `<p>Dear ${studentName},</p>
        <p>Your tutoring session has been scheduled.</p>
        <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
-       <p>Please check your Calendly invite and add it to your calendar to avoid missing the session.</p>
+       <p><strong>Meeting Link:</strong> <a href="${eventDetails.meetingLink}">Join Meeting</a></p>
+       <p>Please add this to your calendar to avoid missing the session.</p>
        <p>Best regards,<br>Math Point Team</p>`
     );
 
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
            <p><strong>Parent:</strong> ${parentName}</p>
            <p><strong>Grade:</strong> ${grade}</p>
            <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
+           <p><strong>Meeting Link:</strong> <a href="${eventDetails.meetingLink}">Join Meeting</a></p>
            <p>Concerns: ${concerns || "None"}</p>
            <p>Best regards,<br>Math Point Team</p>`
         );
