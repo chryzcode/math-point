@@ -114,23 +114,28 @@ const BookingForm = () => {
         console.log("Calendly Event Payload:", eventDetails); // Log the full payload for debugging
 
         try {
-          // Fetch event details from Calendly API
-          const response = await fetch(eventDetails.event.uri, {
+          // Fetch event details from our API endpoint
+          const response = await fetch(`/api/calendly/event?uri=${encodeURIComponent(eventDetails.event.uri)}`, {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_CALENDLY_API_KEY}`,
+              Authorization: `Bearer ${token}`,
             },
           });
 
           if (!response.ok) {
-            throw new Error("Failed to fetch event details from Calendly.");
+            const errorData = await response.json();
+            console.error("Error fetching event details:", errorData);
+            toast.error(errorData.details || "Failed to fetch event details");
+            return;
           }
 
           const eventData = await response.json();
           const startTime = eventData.resource?.start_time;
+          const meetingLink = eventData.meetingLink;
 
-          if (!startTime) {
-            console.error("Start time is missing in the event details.");
+          if (!startTime || !meetingLink) {
+            console.error("Missing required event data:", { startTime, meetingLink });
+            toast.error("Could not retrieve meeting details. Please try again.");
             return;
           }
 
@@ -146,6 +151,10 @@ const BookingForm = () => {
             body: JSON.stringify({
               ...formData,
               preferredTime: startTime,
+              eventDetails: {
+                ...eventDetails,
+                meetingLink
+              }
             }),
           });
 
@@ -160,11 +169,11 @@ const BookingForm = () => {
             timeStyle: "short",
           }).format(new Date(startTime)));
           
-          
-          // Output
+          toast.success("Booking confirmed! Check your email for the meeting link.");
           setFormStep(3); // Move to confirmation step
         } catch (error) {
           console.error("Error during event processing:", error);
+          toast.error(error instanceof Error ? error.message : "An error occurred during booking");
         } finally {
           setLoading(false);
         }
