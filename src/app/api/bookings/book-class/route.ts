@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { freeClassSessions = 0, weeklyClassLimit = 0, instructor } = userRecord;
+    const { freeClassSessions = 0, weeklyClassLimit = 0, instructorId } = userRecord;
 
     if (freeClassSessions <= 0 && weeklyClassLimit <= 0) {
       return NextResponse.json({ error: "Weekly class limit reached" }, { status: 403 });
@@ -90,8 +90,8 @@ export async function POST(req: NextRequest) {
     );
 
     // Send email only to the assigned instructor
-    if (instructor && ObjectId.isValid(instructor)) {
-      const instructorRecord = await usersCollection.findOne({ _id: new ObjectId(instructor) });
+    if (instructorId && ObjectId.isValid(instructorId)) {
+      const instructorRecord = await usersCollection.findOne({ _id: new ObjectId(instructorId) });
 
       if (instructorRecord?.email) {
         await sendEmail(
