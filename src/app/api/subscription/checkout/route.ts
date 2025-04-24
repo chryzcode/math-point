@@ -8,8 +8,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 export async function POST(req: NextRequest) {
   try {
     const { planId, userId } = await req.json();
-    console.log("🔹 Received planId:", planId);
-    console.log("🔹 Received userId:", userId);
+    // console.log("🔹 Received planId:", planId);
+    // console.log("🔹 Received userId:", userId);
 
     if (!planId || !userId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       metadata: { userId, planId },
     });
 
-    console.log("✅ Checkout session created:", session.id);
+    // console.log("✅ Checkout session created:", session.id);
 
     return NextResponse.json({ sessionUrl: session.url });
 

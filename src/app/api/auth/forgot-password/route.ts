@@ -19,7 +19,6 @@ export async function POST(req: Request) {
 
     // ✅ Send password reset email using Brevo
     const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password?token=${token}`;
-    console.log(resetLink)
     await sendEmail(email, "Password Reset Request", `
       <p>Hello,</p>
       <p>You requested a password reset. Click the link below to reset your password:</p>

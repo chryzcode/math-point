@@ -14,8 +14,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid User ID" }, { status: 400 });
     }
 
-    console.log("Fetching classes for user:", userId);
-
+    // Fetching classes for user: userId
     // Connect to the database
     const { db } = await connectToDatabase();
     const bookingsCollection = db.collection("bookings");
@@ -23,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     // Get the current date and time in UTC
     const currentDateUTC = new Date();
-    console.log("Current UTC Date:", currentDateUTC.toISOString());
+    // Current UTC Date: currentDateUTC.toISOString()
 
     // Calculate the start of the current week (Sunday) in UTC
     const startOfWeekUTC = new Date(currentDateUTC);
@@ -34,15 +33,15 @@ export async function GET(req: NextRequest) {
     endOfWeekUTC.setUTCDate(startOfWeekUTC.getUTCDate() + 6); // End of the week (Saturday)
     endOfWeekUTC.setUTCHours(23, 59, 59, 999);
 
-    console.log("Start of Week (UTC):", startOfWeekUTC.toISOString());
-    console.log("End of Week (UTC):", endOfWeekUTC.toISOString());
+    // Start of Week (UTC): startOfWeekUTC.toISOString()
+    // End of Week (UTC): endOfWeekUTC.toISOString()
 
     // Fetch all bookings for the user
     const userBookings = await bookingsCollection
       .find({ userId: new ObjectId(userId) })
       .toArray();
 
-    console.log("Total bookings found:", userBookings.length);
+    // Total bookings found: userBookings.length
 
     // Classify bookings into categories
     const pastClasses = [];
@@ -51,12 +50,12 @@ export async function GET(req: NextRequest) {
 
     for (const cls of userBookings) {
       if (!cls.preferredTime) {
-        console.warn("Skipping booking with missing preferredTime:", cls._id);
+        // console.warn("Skipping booking with missing preferredTime:", cls._id);
         continue; // Skip bookings without a valid preferredTime
       }
 
       const classDateUTC = new Date(cls.preferredTime);
-      console.log("Processing class:", cls._id, "Date:", classDateUTC.toISOString());
+      // Processing class: cls._id Date: classDateUTC.toISOString()
 
       if (classDateUTC < currentDateUTC) {
         // If the class is in the past (its preferredTime is earlier than current UTC time)
@@ -72,9 +71,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    console.log("Past Classes:", pastClasses.length);
-    console.log("This Week Classes:", classesThisWeek.length);
-    console.log("Upcoming Classes:", upcomingClasses.length);
+    // Past Classes: pastClasses.length
+    // This Week Classes: classesThisWeek.length
+    // Upcoming Classes: upcomingClasses.length
 
     // Fetch the user's profile
     const userProfile = await usersCollection.findOne({ _id: new ObjectId(userId) });
@@ -90,7 +89,7 @@ export async function GET(req: NextRequest) {
 
     if (!lastWeekStart || lastWeekStart.toISOString() !== startOfWeekUTC.toISOString()) {
       // If the week has changed, reset remaining classes to total classes
-      console.log("New week detected, resetting remaining classes.");
+      // New week detected, resetting remaining classes.
       await usersCollection.updateOne(
         { _id: new ObjectId(userId) },
         {
@@ -108,7 +107,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User profile not found" }, { status: 404 });
     }
     
-    console.log( classesThisWeek.length)
+    // classesThisWeek.length
     let remainingClasses = totalClasses - classesThisWeek.length;
     if (remainingClasses < 0) remainingClasses = 0;
 
@@ -132,7 +131,7 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error fetching classes:", error);
+    // console.error("Error fetching classes:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -15,10 +15,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { parentName, studentName, email, phone, grade, concerns, preferredTime, eventDetails } = await req.json();
+    const rawBody = await req.text();
+    console.log("[BOOKING ENDPOINT] Raw request body:", rawBody);
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch (parseErr) {
+      console.error("[BOOKING ENDPOINT] Error parsing JSON body:", parseErr);
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const { parentName, studentName, email, phone, grade, concerns, preferredTime, eventDetails } = parsedBody;
 
     if (!parentName || !studentName || !email || !phone || !grade || !preferredTime || !eventDetails) {
-      console.log(parentName, studentName, email, phone, grade, concerns, preferredTime, eventDetails)
+      //       console.log(parentName, studentName, email, phone, grade, concerns, preferredTime, eventDetails)
       return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 });
     }
 
@@ -135,7 +144,8 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating booking:", error);
+    console.error("[BOOKING ENDPOINT] Error in POST handler:", error);
+    //       console.error("Error creating booking:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

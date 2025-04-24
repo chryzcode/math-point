@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Construct the proper Calendly API URL
     const calendlyApiUrl = `https://api.calendly.com/scheduled_events/${eventUuid}`;
-    console.log("Fetching Calendly event from API URL:", calendlyApiUrl);
+    // console.log("Fetching Calendly event from API URL:", calendlyApiUrl);
 
     const response = await fetch(calendlyApiUrl, {
       method: "GET",
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     const eventData = await response.json();
-    console.log("Calendly Event Data:", eventData);
+    // console.log("Calendly Event Data:", eventData);
     
     // Extract the meeting link from the event data
     const meetingLink = eventData.resource?.location?.join_url || 
