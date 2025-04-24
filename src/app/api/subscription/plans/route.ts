@@ -14,7 +14,7 @@ export async function GET() {
     const prices = await Promise.all(
       priceIds.map(async (priceId) => {
         const price = await stripe.prices.retrieve(priceId.trim(), { expand: ["product"] });
-        console.log("Price details:", price);
+        //         console.log("Price details:", price);
 
         const product = price.product as Stripe.Product;
         const features = product.marketing_features?.map(feature => 
@@ -34,7 +34,7 @@ export async function GET() {
 
     return NextResponse.json(prices, { status: 200 });
   } catch (error) {
-    console.error("Error fetching plans:", error);
+    // console.error("Error fetching plans:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

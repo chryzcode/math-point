@@ -53,6 +53,17 @@ const BookingForm = () => {
     }
   }, [authUser, router]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (loading) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [loading]);
+
   const grades = [
     "Pre-K",
     "K",
@@ -111,7 +122,6 @@ const BookingForm = () => {
       if (e.data?.event === "calendly.event_scheduled") {
         const eventDetails = e.data.payload;
 
-        console.log("Calendly Event Payload:", eventDetails); // Log the full payload for debugging
 
         try {
           // Fetch event details from our API endpoint
@@ -124,7 +134,6 @@ const BookingForm = () => {
 
           if (!response.ok) {
             const errorData = await response.json();
-            console.error("Error fetching event details:", errorData);
             toast.error(errorData.details || "Failed to fetch event details");
             return;
           }
@@ -134,7 +143,6 @@ const BookingForm = () => {
           const meetingLink = eventData.meetingLink;
 
           if (!startTime || !meetingLink) {
-            console.error("Missing required event data:", { startTime, meetingLink });
             toast.error("Could not retrieve meeting details. Please try again.");
             return;
           }
@@ -172,7 +180,6 @@ const BookingForm = () => {
           toast.success("Booking confirmed! Check your email for the meeting link.");
           setFormStep(3); // Move to confirmation step
         } catch (error) {
-          console.error("Error during event processing:", error);
           toast.error(error instanceof Error ? error.message : "An error occurred during booking");
         } finally {
           setLoading(false);
@@ -200,7 +207,7 @@ const BookingForm = () => {
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-800">Book Your Session</h2>
               <p className="text-gray-600 mt-2">
-                Fill out the form below to schedule your personalized demo class.
+                Fill out the form below to schedule your personalized tutoring session.
               </p>
             </div>
 
@@ -287,8 +294,14 @@ const BookingForm = () => {
                 disabled={loading}
                 className="w-full bg-primary text-white py-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-300"
               >
-                {loading ? "Submitting..." : "Continue to Schedule"}
+                {loading ? "Booking..." : "Continue to Schedule"}
               </button>
+              {loading && (
+                <div className="mt-4 text-blue-600 font-semibold flex items-center gap-2">
+                  <span className="spinner-border animate-spin inline-block w-4 h-4 border-2 rounded-full border-blue-600 border-t-transparent"></span>
+                  Booking in progress. Please wait...
+                </div>
+              )}
             </form>
           </>
         )}

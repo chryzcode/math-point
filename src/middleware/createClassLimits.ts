@@ -11,7 +11,7 @@ const classLimits: Record<SubscriptionPlan, number> = {
 
 export function startWeeklyResetJob() {
   cron.schedule("0 0 * * 1", async () => {
-    console.log("🔄 Resetting class limits for all users...");
+    // console.log("🔄 Resetting class limits for all users...");
 
     try {
       const { db } = await connectToDatabase();
@@ -23,10 +23,10 @@ export function startWeeklyResetJob() {
           { $set: { weeklyClassLimit: limit } }
         );
 
-        console.log(`✅ Updated ${result.modifiedCount} users with plan "${plan}".`);
+        // console.log(`✅ Updated ${result.modifiedCount} users with plan "${plan}".`);
       }
 
-      console.log("🎉 Weekly class limits reset successfully.");
+      // console.log("🎉 Weekly class limits reset successfully.");
     } catch (error) {
       console.error("🚨 Error resetting weekly class limits:", error);
     }

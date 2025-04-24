@@ -18,9 +18,10 @@ export const sendEmail = async (to: string, subject: string, htmlContent: string
         "Content-Type": "application/json",
       },
     });
-    console.log("Email sent successfully via Brevo");
+    //     console.log("Email sent successfully via Brevo");
   } catch (error) {
     if (error instanceof AxiosError) {
+      // console.error("Error sending email:", error.response?.data || error);
       console.error("Error sending email:", error.response?.data || error);
     }
     throw new Error("Error sending email");

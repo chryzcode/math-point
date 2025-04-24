@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET as string
     );
 
-    console.log("🔹 Webhook Event Received:", event.type);
+    // console.log("🔹 Webhook Event Received:", event.type);
 
     const { db } = await connectToDatabase();
 
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log("🔹 Checkout Session Data:", session);
+        // console.log("🔹 Checkout Session Data:", session);
 
         const userId = session.metadata?.userId;
         const subscriptionId = session.subscription as string;
@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Invalid metadata" }, { status: 400 });
         }
 
-        console.log(`✅ Checkout completed for user ${userId}, subscription ID: ${subscriptionId}`);
+        // console.log(`✅ Checkout completed for user ${userId}, subscription ID: ${subscriptionId}`);
 
         // Retrieve subscription details
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        console.log("🔹 Subscription Data:", subscription);
+        // console.log("🔹 Subscription Data:", subscription);
 
         const priceId = subscription.items.data[0]?.price.id;
         if (!priceId) {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         const product = await stripe.products.retrieve(price.product as string);
         const planName = product.name;
 
-        console.log(`🔹 Plan Name: ${planName}`);
+        // console.log(`🔹 Plan Name: ${planName}`);
 
         const classLimits: Record<string, number> = {
           "Basic Plan": 1,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         const weeklyClassLimit = classLimits[planName] ?? 0;
         const userObjectId = new ObjectId(userId);
 
-        console.log(`🔎 Checking if user exists in DB: ${userId}`);
+        // console.log(`🔎 Checking if user exists in DB: ${userId}`);
         const userExists = await db.collection("users").findOne({ _id: userObjectId });
 
         if (!userExists) {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        console.log("🔄 Updating user subscription in database...");
+        // console.log("🔄 Updating user subscription in database...");
         const updateResult = await db.collection("users").updateOne(
           { _id: userObjectId },
           {
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         );
 
         if (updateResult.modifiedCount === 1) {
-          console.log("✅ Subscription updated successfully in database.");
+          // console.log("✅ Subscription updated successfully in database.");
         } else {
           console.warn("⚠️ Subscription update may not have modified any document.");
         }
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log("🔹 Payment Failed Invoice:", invoice);
+        // console.log("🔹 Payment Failed Invoice:", invoice);
 
         const subscriptionId = invoice.subscription as string;
         if (!subscriptionId) {
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        console.log(`🔎 Searching for user with subscription ID: ${subscriptionId}`);
+        // console.log(`🔎 Searching for user with subscription ID: ${subscriptionId}`);
         const user = await db.collection("users").findOne({ stripeSubscriptionId: subscriptionId });
 
         if (!user) {
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        console.log(`🔄 Downgrading subscription for user ${user._id}...`);
+        // console.log(`🔄 Downgrading subscription for user ${user._id}...`);
         const downgradeResult = await db.collection("users").updateOne(
           { _id: user._id },
           {
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         );
 
         if (downgradeResult.modifiedCount === 1) {
-          console.log(`✅ User ${user._id} downgraded to Free Plan.`);
+          // console.log(`✅ User ${user._id} downgraded to Free Plan.`);
         } else {
           console.warn(`⚠️ No document modified while downgrading user ${user._id}.`);
         }
@@ -130,10 +130,10 @@ export async function POST(req: NextRequest) {
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log("🔹 Subscription Canceled:", subscription);
+        // console.log("🔹 Subscription Canceled:", subscription);
 
         const subscriptionId = subscription.id;
-        console.log(`🔎 Searching for user with subscription ID: ${subscriptionId}`);
+        // console.log(`🔎 Searching for user with subscription ID: ${subscriptionId}`);
         const user = await db.collection("users").findOne({ stripeSubscriptionId: subscriptionId });
 
         if (!user) {
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        console.log(`🔄 Cancelling subscription for user ${user._id}...`);
+        // console.log(`🔄 Cancelling subscription for user ${user._id}...`);
         const cancelResult = await db.collection("users").updateOne(
           { _id: user._id },
           {
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
         );
 
         if (cancelResult.modifiedCount === 1) {
-          console.log(`✅ Subscription canceled for user ${user._id}.`);
+          // console.log(`✅ Subscription canceled for user ${user._id}.`);
         } else {
           console.warn(`⚠️ No document modified while canceling user ${user._id}.`);
         }
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        // console.log(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
