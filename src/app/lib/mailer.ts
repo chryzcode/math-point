@@ -5,7 +5,7 @@ export const sendEmail = async (to: string, subject: string, htmlContent: string
   const senderEmail = process.env.SENDER_EMAIL as string; // Verified Brevo sender email
 
   const payload = {
-    sender: { name: "The Math Point", email: senderEmail },
+    sender: { name: "The MathPoint", email: senderEmail },
     to: [{ email: to }],
     subject,
     htmlContent,
