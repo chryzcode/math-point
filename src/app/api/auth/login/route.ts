@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       );
 
       const verificationLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify?token=${verificationToken}`;
-      const emailContent = `<p>Hello ${user.name},</p><p>Please verify your account by clicking the link below:</p><a href="${verificationLink}">Verify Account</a>`;
+      const emailContent = `<p>Hello ${user.name},</p><p>Please verify your account by clicking the link below:</p><a href="${verificationLink}">Verify Account</a><p>If you don't see this email in your inbox, please check your spam or junk folder.</p>`;
       
       await sendEmail(email, "Verify Your Account", emailContent);
 

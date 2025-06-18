@@ -1,14 +1,24 @@
 import axios, { AxiosError } from "axios";
 
-export const sendEmail = async (to: string, subject: string, htmlContent: string) => {
+export const sendEmail = async (to: string, subject: string, htmlContent: string, plainTextContent?: string) => {
   const API_KEY = process.env.BREVO_API_KEY as string; // Brevo API Key
   const senderEmail = process.env.SENDER_EMAIL as string; // Verified Brevo sender email
+
+  // Add a business address/footer to the HTML content
+  const spamLine = "If you don't see this email in your inbox, please check your spam or junk folder.";
+  const businessFooter = `<hr><p style='font-size:12px;color:#888;'>Math Point<br>${spamLine}<br>If you did not request this email, please ignore it.</p>`;
+  const htmlWithFooter = htmlContent + businessFooter;
+
+  // Add a plain text version with footer if not provided
+  const plainFooter = `\n\nMath Point\n${spamLine}\nIf you did not request this email, please ignore it.`;
+  const textWithFooter = (plainTextContent || htmlContent.replace(/<[^>]+>/g, '')) + plainFooter;
 
   const payload = {
     sender: { name: "The MathPoint", email: senderEmail },
     to: [{ email: to }],
     subject,
-    htmlContent,
+    htmlContent: htmlWithFooter,
+    textContent: textWithFooter,
   };
 
   try {
