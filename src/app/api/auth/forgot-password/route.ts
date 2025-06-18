@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       <p>You requested a password reset. Click the link below to reset your password:</p>
       <a href="${resetLink}" target="_blank">${resetLink}</a>
       <p>If you did not request this, please ignore this email.</p>
+      <p>If you don't see this email in your inbox, please check your spam or junk folder.</p>
     `);
 
     return NextResponse.json({ message: "Password reset link sent to your email" }, { status: 200 });

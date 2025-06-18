@@ -60,8 +60,11 @@ export async function POST(req: Request) {
       email,
       "Verify Your Email",
       `<p>Hi ${name},</p>
-      <p>Click the link below to verify your email:</p>
-      <a href="${verificationLink}">Verify Email</a>`
+      <p>Thank you for registering at Math Point!</p>
+      <p>Please click the link below to verify your email address:</p>
+      <a href="${verificationLink}">Verify Email</a>
+      <p>If you did not request this, please ignore this email.</p>
+      <p>If you don't see this email in your inbox, please check your spam or junk folder.</p>`
     );
 
     return new Response(

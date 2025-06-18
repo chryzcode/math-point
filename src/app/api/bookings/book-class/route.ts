@@ -92,10 +92,12 @@ export async function POST(req: NextRequest) {
       email,
       "Math Point Tutoring Session Confirmation",
       `<p>Dear ${studentName},</p>
-       <p>Your tutoring session has been scheduled.</p>
+       <p>Your tutoring session has been scheduled at Math Point.</p>
        <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
        <p><strong>Meeting Link:</strong> <a href="${eventDetails.meetingLink}">Join Meeting</a></p>
        <p>Please add this to your calendar to avoid missing the session.</p>
+       <p>If you did not request this, please ignore this email.</p>
+       <p>If you don't see this email in your inbox, please check your spam or junk folder.</p>
        <p>Best regards,<br>Math Point Team</p>`
     );
 
@@ -115,6 +117,7 @@ export async function POST(req: NextRequest) {
            <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
            <p><strong>Meeting Link:</strong> <a href="${eventDetails.meetingLink}">Join Meeting</a></p>
            <p>Concerns: ${concerns || "None"}</p>
+           <p>If you don't see this email in your inbox, please check your spam or junk folder.</p>
            <p>Best regards,<br>Math Point Team</p>`
         );
       }
@@ -135,6 +138,7 @@ export async function POST(req: NextRequest) {
          <p><strong>Preferred Time:</strong> ${formattedTime} (UTC)</p>
          <p><strong>Concerns:</strong> ${concerns || "None"}</p>
          <p>Please assign an instructor for this student.</p>
+         <p>If you don't see this email in your inbox, please check your spam or junk folder.</p>
          <p>Best regards,<br>Math Point Team</p>`
       );
     }
