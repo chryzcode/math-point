@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // Generate verification token
     const token = jwt.sign({ email }, process.env.JWT_SECRET!, { expiresIn: "1h" });
-    const verificationLink = `${process.env.BASE_URL}/api/auth/verify?token=${token}`;
+    const verificationLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify?token=${token}`;
 
     // Save the unverified user
     await db.collection<User>("users").insertOne({
