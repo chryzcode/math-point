@@ -28,7 +28,7 @@ const HeroSection = () => {
           </div>
           
           <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-            Math Tutor That Improves
+            Math Tutoring That Improves
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {" "}Grades and Confidence
             </span>
